@@ -92,6 +92,7 @@ void ofApp::setup(){
     engine.setRate(20);
     engine.setParticleRadius(.010);
     engine.visible = false;
+    ship.radius = 0.010;
     
     
     // create our one lonely particle
