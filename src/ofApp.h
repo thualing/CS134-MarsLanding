@@ -57,6 +57,7 @@ class ofApp : public ofBaseApp{
 	
 		ofVec3f selectedPoint;
 		ofVec3f intersectPoint;
+        
 
 
 		const float selectionRange = 4.0;

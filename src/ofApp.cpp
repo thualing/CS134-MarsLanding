@@ -291,8 +291,20 @@ void ofApp::keyPressed(int key) {
         break;
     case OF_KEY_RIGHT:
         playSound();
-        thruster.add(ofVec3f(.3, 0, 0));
-        engine.setVelocity(ofVec3f(-2, 0, 0));
+        thruster.add(ofVec3f(.5, 0, 0));
+        engine.setVelocity(ofVec3f(-5, 0, 0));
+        engine.start();
+        break;
+    case 'z':
+        playSound();
+        thruster.add(ofVec3f(0, 0, 0.5));
+        engine.setVelocity(ofVec3f(0, 0, -5));
+        engine.start();
+        break;
+    case 'x':
+        playSound();
+        thruster.add(ofVec3f(0, 0, -0.5));
+        engine.setVelocity(ofVec3f(0, 0, 5));
         engine.start();
         break;
 	default:
