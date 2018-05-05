@@ -39,6 +39,7 @@ void ofApp::setup(){
 	bCtrlKeyDown = false;
 	bRoverLoaded = false;
 	bTerrainSelected = true;
+    level = 0;
 //	ofSetWindowShape(1024, 768);
 	cam.setDistance(10);
 	cam.setNearClip(.1);
@@ -104,6 +105,12 @@ void ofApp::setup(){
     
     
     sys.addForce(&thruster);
+    
+    
+    
+    
+    
+    
 }
 
 
@@ -277,36 +284,42 @@ void ofApp::keyPressed(int key) {
         thruster.add(ofVec3f(0, .5, 0));
         engine.setVelocity(ofVec3f(0, -5, 0));
         engine.start();
+        soundPlayer.play();
         break;
     case OF_KEY_DOWN:
         playSound();
         thruster.add(ofVec3f(0, -.5, 0));
         engine.setVelocity(ofVec3f(0, 5, 0));
         engine.start();
+        soundPlayer.play();
         break;
     case OF_KEY_LEFT:
         playSound();
         thruster.add(ofVec3f(-.5, 0, 0));
         engine.setVelocity(ofVec3f(5, 0, 0));
         engine.start();
+        soundPlayer.play();
         break;
     case OF_KEY_RIGHT:
         playSound();
         thruster.add(ofVec3f(.5, 0, 0));
         engine.setVelocity(ofVec3f(-5, 0, 0));
         engine.start();
+        soundPlayer.play();
         break;
     case 'z':
         playSound();
         thruster.add(ofVec3f(0, 0, 0.5));
         engine.setVelocity(ofVec3f(0, 0, -5));
         engine.start();
+        soundPlayer.play();
         break;
     case 'x':
         playSound();
         thruster.add(ofVec3f(0, 0, -0.5));
         engine.setVelocity(ofVec3f(0, 0, 5));
         engine.start();
+        soundPlayer.play();
         break;
 	default:
 		break;
