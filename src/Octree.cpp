@@ -9,12 +9,12 @@
 
 // draw Octree (recursively)
 //
-void Octree::draw(TreeNode & node, int numLevels, int level) {
-	if (level >= numLevels) return;
+void Octree::draw(TreeNode & node, int level) {
 	drawBox(node.box);
+    if (node.children.size() == 0) return;
 	level++;
 	for (int i = 0; i < node.children.size(); i++) {
-		draw(node.children[i], numLevels, level);
+		draw(node.children[i], level);
 	}
 }
 
@@ -108,7 +108,7 @@ void Octree::subDivideBox8(const Box &box, vector<Box> & boxList) {
 //  "numLevels" have been created or when all leave nodes contain one 
 //  vertex, whichever comes first.
 //
-void Octree::create(const ofMesh & mesh, int numLevels) {
+void Octree::create(const ofMesh & mesh) {
 	// initialize octree structure
 	//
 	this->mesh = mesh;
@@ -127,7 +127,7 @@ void Octree::create(const ofMesh & mesh, int numLevels) {
 	// recursively buid octree (starting at level 1)
 	//
 	level++;
-	subdivide(root, numLevels, level);
+	subdivide(root, level);
 	float t2 = ofGetElapsedTimeMillis();
 	cout << "Time to Build Octree: " << t2 - t1 << " milliseconds" << endl;
 
@@ -143,23 +143,66 @@ void Octree::create(const ofMesh & mesh, int numLevels) {
 //      (c) if a child has more than one point
 //            recursively call subdivide on child
 //
-void Octree::subdivide(TreeNode & node, int numLevels, int level) {
-	
+void Octree::subdivide(TreeNode & node, int level) {
+    if (node.points.size() == 1) {
+        return;
+    }
+    else {
+        vector<Box> childrenBoxes;
+        subDivideBox8(node.box, childrenBoxes);
+        for (int i = 0; i < childrenBoxes.size(); ++i) {
+            Box tmp = childrenBoxes[i];
+            TreeNode currentChild;
+            vector<int> pointRtn;
+            getMeshPointsInBox(node.points, tmp, pointRtn);
+            if (pointRtn.size() == 1) {
+                currentChild.box = tmp;
+                currentChild.points = pointRtn;
+                node.children.push_back(currentChild);
+            }
+            else if (pointRtn.size() > 1) {
+                currentChild.box = tmp;
+                currentChild.points = pointRtn;
+                node.children.push_back(currentChild);
+                subdivide(currentChild, level + 1);
+            }
+        }
+    }
 }
 
 //  primary recursive function to test for ray intersection, returns
 //  first child leaf node intersected. returns true if a leaf node
 //  with one point was found.
 //  algorithm:
-//  1) does ray intersect node's box ?
+//  1) does point intersect node's box ?
 //         if yes and node contains, only one point, we are done done; return node and true
 //         if yes and node contains more than one point, recursively call intersect()
 //         on each child;
 //     if no return false;
 //
 //
-bool Octree::intersect(const Ray &ray, const TreeNode & node, TreeNode & nodeRtn) {
-
+bool Octree::intersect(const ofVec3f &point, const TreeNode & node) {
+    if (node.points.size() == 1) {
+        ofVec3f tmpPt = mesh.getVertex(node.points[0]);
+        if (tmpPt.x == point.x && tmpPt.y == point.y && tmpPt.z == point.z) {
+            return true;
+        }
+        return false;
+    }
+    if (node.children.size() == 0) {
+        for (int i = 0; i < node.points.size(); ++i) {
+            ofVec3f tmpPt = mesh.getVertex(node.points[i]);
+            if (tmpPt.x == point.x && tmpPt.y == point.y && tmpPt.z == point.z) {
+                return true;
+            }
+            return false;
+        }
+    }
+    for (int i = 0; i < node.children.size(); ++i) {
+        TreeNode currentChild = node.children[i];
+        if (currentChild.box.inside(Vector3(point.x, point.y, point.z)))
+            intersect(point, currentChild);
+    }
 }
 
 

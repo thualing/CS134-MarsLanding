@@ -63,6 +63,7 @@ class ofApp : public ofBaseApp{
 		const float selectionRange = 4.0;
         int level;
         Octree tree;
+        bool collision;
     
         // this part from rocketBall
         void playSound();

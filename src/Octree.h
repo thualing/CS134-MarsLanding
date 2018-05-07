@@ -38,13 +38,10 @@ public:
 class Octree {
 public:
 
-	void create(const ofMesh & mesh, int numLevels);
-	void subdivide(TreeNode & node, int numLevels, int level);
-	bool intersect(const Ray &, const TreeNode & node, TreeNode & nodeRtn);
-	void draw(TreeNode & node, int numLevels, int level);
-	void draw(int numLevels, int level) {
-		draw(root, numLevels, level);
-	}
+	void create(const ofMesh & mesh);
+	void subdivide(TreeNode & node, int level);
+	bool intersect(const ofVec3f & point, const TreeNode & node);
+	void draw(TreeNode & node, int level);
 	void drawBox(const Box &box);
 	Box meshBounds(const ofMesh &);
 	int getMeshPointsInBox(const vector<int> & points, Box & box, vector<int> & pointsRtn);

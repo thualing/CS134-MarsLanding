@@ -58,20 +58,8 @@ void ofApp::setup(){
     
 	mars.setScaleNormalization(false);
     lander.setScaleNormalization(false);
-
-	boundingBox = meshBounds(mars.getMesh(0));
-//    root.box = meshBounds(mars.getMesh(0));
-//    int ct = mars.getMesh(0). getNumVertices(); // get the number of points in mars
-//    for (int i = 0; i < ct; ++i) {
-//        root.pointIndices.push_back(i);
-//    }
-
-    level = 1;
-	//  Test Box Subdivide
-	//
-	subDivideBox8(boundingBox, level1);
-    // recursion
-    
+    tree.create(mars.getMesh(0));
+    collision = false;
     
     // this part from rocketBall
     cam.setDistance(10);
@@ -93,7 +81,7 @@ void ofApp::setup(){
     engine.setRate(20);
     engine.setParticleRadius(.010);
     engine.visible = false;
-    ship.radius = 0.010;
+    ship.radius = 0.050;
     
     
     // create our one lonely particle
@@ -123,11 +111,14 @@ void ofApp::update() {
     engine.setPosition(sys.particles[0].position);
     lander.setPosition(sys.particles[0].position.x, sys.particles[0].position.y,sys.particles[0].position.z);
     lander.update();
+    if (tree.intersect(lander.getPosition(), tree.root)) {
+        collision = true;
+    }
 }
 //--------------------------------------------------------------
 void ofApp::draw(){
 
-//	ofBackgroundGradient(ofColor(20), ofColor(0));   // pick your own backgroujnd
+//	ofBackgroundGradient(ofColor(20), ofColor(0));   // pick your own background
 	ofBackground(ofColor::black);
 //	cout << ofGetFrameRate() << endl;
 
@@ -203,6 +194,10 @@ void ofApp::draw(){
     for (int i=0; i < level1.size(); i++)
         drawBox(level1[i]);
 	ofPopMatrix();
+    if (collision == true) {
+        ofDrawBitmapString("GAME OVER", ofPoint(ofGetWindowWidth() / 2, ofGetWindowHeight() / 2));
+    }
+    
 	cam.end();
 }
 
