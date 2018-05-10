@@ -50,5 +50,5 @@ public:
     int getMeshPointsInBox(const vector<int> & points, Box & box, vector<int> & pointsRtn);
     void subDivideBox8(const Box &box, vector<Box> & boxList);
     void subdivide(TreeNode &rootNode, int numLevels, int level);
-    bool intersect(const ofVec3f &point, TreeNode & node);
+    bool intersect(const ofVec3f &point, TreeNode &node);
 };

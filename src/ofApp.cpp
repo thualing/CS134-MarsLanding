@@ -59,7 +59,7 @@ void ofApp::setup(){
     
 	mars.setScaleNormalization(false);
     lander.setScaleNormalization(false);
-    tree.create(mars.getMesh(0), 5);
+    tree.create(mars.getMesh(0), 7);
     collision = false;
     frameCounter = 0;
     
@@ -88,7 +88,7 @@ void ofApp::setup(){
     // create our one lonely particle
     //
     ship.lifespan = 10000;
-    ship.position.set(0, 2.5, 0);
+    ship.position.set(0, 5, 0);
     lander.setPosition(ship.position.x, ship.position.y, ship.position.z);
     sys.add(ship);
     
@@ -625,6 +625,5 @@ void ofApp::collisionDetect() {
     }
     if (tree.intersect(contactPt, tree.root)) {
         collision = true;
-        cout << "collision" << endl;
     }
 }
