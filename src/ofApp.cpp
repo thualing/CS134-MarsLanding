@@ -93,6 +93,7 @@ void ofApp::setup(){
     sys.add(ship);
     
     sys.addForce(&thruster);
+    sys.addForce(&impulseForce);
     
 }
 
@@ -188,7 +189,7 @@ void ofApp::draw(){
         drawBox(level1[i]);
 	ofPopMatrix();
     if (collision) {
-        printf("Landing success");
+        cout << "landing" << endl;
     }
     
 	cam.end();
@@ -625,5 +626,7 @@ void ofApp::collisionDetect() {
     }
     if (tree.intersect(contactPt, tree.root)) {
         collision = true;
+//        cout << "velocity: " << vel << endl;
+        impulseForce.apply(1.5 * (- vel * 3.6));
     }
 }
