@@ -85,14 +85,12 @@ void ofApp::setup(){
     engine.visible = false;
     ship.radius = 0.050;
     
-    
     // create our one lonely particle
     //
     ship.lifespan = 10000;
     ship.position.set(0, 2.5, 0);
     lander.setPosition(ship.position.x, ship.position.y, ship.position.z);
     sys.add(ship);
-    
     
     sys.addForce(&thruster);
     
@@ -123,12 +121,12 @@ void ofApp::draw(){
     // this part from RocketBall
     // draw grid
     //
-    ofPushMatrix();
-    ofRotate(90, 0, 0, 1);
-    ofSetLineWidth(1);
-    ofSetColor(ofColor::dimGrey);
-    ofDrawGridPlane();
-    ofPopMatrix();
+//    ofPushMatrix();
+//    ofRotate(90, 0, 0, 1);
+//    ofSetLineWidth(1);
+//    ofSetColor(ofColor::dimGrey);
+//    ofDrawGridPlane();
+//    ofPopMatrix();
     
     // draw particle system
     //
@@ -183,14 +181,14 @@ void ofApp::draw(){
 	
 	ofNoFill();
 	ofSetColor(ofColor::white);
-	drawBox(boundingBox);
+    drawBox(boundingBox);
 
     ofSetColor(ofColor::red);
     for (int i=0; i < level1.size(); i++)
         drawBox(level1[i]);
 	ofPopMatrix();
     if (collision) {
-        printf("Game Over");
+        printf("Landing success");
     }
     
 	cam.end();
@@ -619,13 +617,12 @@ void ofApp::playSound() {
 // collision detection
 //
 void ofApp::collisionDetect() {
-    Vector3 c = landerBoundingBox.center();
-    contactPt = ofVec3f(c.x(), c.y() - landerBoundingBox.height()/2, c.z()) + lander.getPosition();
+    contactPt =  sys.particles[0].position;
     ofVec3f vel = sys.particles[0].velocity;
+    // check if the ship is moving up
     if (vel.y > 0) {
         return;
     }
-    
     if (tree.intersect(contactPt, tree.root)) {
         collision = true;
         cout << "collision" << endl;

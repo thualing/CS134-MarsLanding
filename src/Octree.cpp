@@ -132,43 +132,32 @@ void Octree::create(const ofMesh &mesh, int numLevels)
 void Octree::subdivide(TreeNode &rootNode, int numLevels, int level)
 {
     // return when the level is numLevels or greater
-    //
     if (level >= numLevels) return;
-    
     // subdivide the current node box into 8 boxes
-    //
     vector<Box> boxList;
     subDivideBox8(rootNode.box, boxList);
-    
-    
     //  for each child box:
     //      (a) distribute points in parent node to child node
     //      (b) if there are points in child node add it to parent's children
     //      (c) if a child has more than one point
     //            recursively call subdivide on child
-    //
     level++;
-    //printf("Level %d\n", level);
     for (int i = 0; i < boxList.size(); i++)
     {
         // Make child node
         // Assign box to child node
-        //
         TreeNode childNode;
         childNode.box = boxList[i];
-        
         int count = getMeshPointsInBox(rootNode.points, rootNode.box, childNode.points);
         if (count > 0)
         {
             rootNode.children.push_back(childNode);
             
         }
-        
-        if (childNode.points.size() > 1)
+        if (count > 1)
         {
-            
-            //            subdivide(childNode, numLevels, level);
-            subdivide(rootNode.children.back(), numLevels, level);
+        subdivide(childNode, numLevels, level);
+//            subdivide(rootNode.children.back(), numLevels, level);
         }
     }
     
@@ -185,22 +174,37 @@ void Octree::subdivide(TreeNode &rootNode, int numLevels, int level)
 //     if no return false;
 //
 //
-bool Octree::intersect(const ofVec3f &point, TreeNode & node) {
-    if (node.children.size() == 0) {
-        for (int i = 0; i < node.points.size(); ++i) {
-            ofVec3f tmpPt = mesh.getVertex(node.points[i]);
-            if (tmpPt.x == point.x && tmpPt.y == point.y && tmpPt.z == point.z) {
-                return true;
-            }
-        }
-        return false;
-    }
-    for (int i = 0; i < node.children.size(); ++i) {
-        TreeNode currentChild = node.children[i];
-        if (currentChild.box.inside(Vector3(point.x, point.y, point.z)))
-            intersect(point, currentChild);
-    }
-}
+//bool Octree::intersect(const ofVec3f &point, TreeNode & node) {
+//    if (node.children.size() == 0) {
+//        if (node.points.size() == 0) {
+//            return false;
+//        }
+//        for (int i = 0; i < node.points.size(); ++i) {
+//            cout << node.points.size() << endl;
+//            ofVec3f tmpPt = mesh.getVertex(node.points[i]);
+//            if ((abs(tmpPt.x - point.x) < 0.05) && (abs(tmpPt.y - point.y) < 0.05)&& (abs(tmpPt.z - point.z) < 0.05)) {
+//                return true;
+//            }
+//        }
+//        return false;
+//    }
+//    for (int i = 0; i < node.children.size(); ++i) {
+//        TreeNode currentChild = node.children[i];
+//        if (currentChild.box.inside(Vector3(point.x, point.y, point.z)))
+//            intersect(point, currentChild);
+//    }
+//}
 
+bool Octree::intersect(const ofVec3f & point, TreeNode & node) {
+    bool rtn = false;
+    for (int i = 0; i < node.points.size(); ++i) {
+        ofVec3f tmpPt = mesh.getVertex(node.points[i]);
+        if ((point - tmpPt) == ofVec3f(0, 0, 0)) {
+            rtn = true;
+            break;
+        }
+    }
+    return rtn;
+}
 
 
