@@ -69,7 +69,7 @@ class ofApp : public ofBaseApp{
         Box landerBoundingBox;
         ofVec3f contactPt;
         ImpulseForce impulseForce;
-        
+
     
         // this part from rocketBall
         void playSound();

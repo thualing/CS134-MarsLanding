@@ -32,7 +32,7 @@
 // setup scene, lighting, state and load geometry
 //
 void ofApp::setup(){
-
+    
 	bWireframe = false;
 	bDisplayPoints = false;
 	bAltKeyDown = false;
@@ -53,9 +53,13 @@ void ofApp::setup(){
 	initLightingAndMaterials();
 
 	mars.loadModel("geo/mars-low-v2.obj");
+    mars.setScale(4, 4, 4);
     lander.loadModel("geo/lander.obj");
     lander.setScale(0.5, 0.5, 0.5);
     landerBoundingBox = meshBounds(lander.getMesh(0));
+    
+    
+    
     
 	mars.setScaleNormalization(false);
     lander.setScaleNormalization(false);
