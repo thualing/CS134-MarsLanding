@@ -55,11 +55,13 @@ void ofApp::setup(){
 	mars.loadModel("geo/mars-low-v2.obj");
     lander.loadModel("geo/lander.obj");
     lander.setScale(0.5, 0.5, 0.5);
+    landerBoundingBox = meshBounds(lander.getMesh(0));
     
 	mars.setScaleNormalization(false);
     lander.setScaleNormalization(false);
-    tree.create(mars.getMesh(0));
+    tree.create(mars.getMesh(0), 5);
     collision = false;
+    frameCounter = 0;
     
     // this part from rocketBall
     cam.setDistance(10);
@@ -94,11 +96,6 @@ void ofApp::setup(){
     
     sys.addForce(&thruster);
     
-    
-    
-    
-    
-    
 }
 
 
@@ -111,9 +108,7 @@ void ofApp::update() {
     engine.setPosition(sys.particles[0].position);
     lander.setPosition(sys.particles[0].position.x, sys.particles[0].position.y,sys.particles[0].position.z);
     lander.update();
-    if (tree.intersect(lander.getPosition(), tree.root)) {
-        collision = true;
-    }
+    collisionDetect();
 }
 //--------------------------------------------------------------
 void ofApp::draw(){
@@ -194,11 +189,17 @@ void ofApp::draw(){
     for (int i=0; i < level1.size(); i++)
         drawBox(level1[i]);
 	ofPopMatrix();
-    if (collision == true) {
-        ofDrawBitmapString("GAME OVER", ofPoint(ofGetWindowWidth() / 2, ofGetWindowHeight() / 2));
+    if (collision) {
+        printf("Game Over");
     }
     
 	cam.end();
+    
+    string str;
+    str += "Frame Rate:" + std::to_string(ofGetFrameRate());
+    ofSetColor(ofColor::white)
+    ;
+    ofDrawBitmapString(str, ofGetWindowWidth() - 170, 15);
 }
 
 // 
@@ -611,4 +612,22 @@ bool ofApp::mouseIntersectPlane(ofVec3f planePoint, ofVec3f planeNorm, ofVec3f &
 
 void ofApp::playSound() {
     if (soundFileLoaded) soundPlayer.play();
+}
+
+//--------------------------------------------------------------
+//
+// collision detection
+//
+void ofApp::collisionDetect() {
+    Vector3 c = landerBoundingBox.center();
+    contactPt = ofVec3f(c.x(), c.y() - landerBoundingBox.height()/2, c.z()) + lander.getPosition();
+    ofVec3f vel = sys.particles[0].velocity;
+    if (vel.y > 0) {
+        return;
+    }
+    
+    if (tree.intersect(contactPt, tree.root)) {
+        collision = true;
+        cout << "collision" << endl;
+    }
 }

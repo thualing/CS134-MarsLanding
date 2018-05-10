@@ -64,6 +64,10 @@ class ofApp : public ofBaseApp{
         int level;
         Octree tree;
         bool collision;
+        int frameCounter;
+        void collisionDetect();
+        Box landerBoundingBox;
+        ofVec3f contactPt;
     
         // this part from rocketBall
         void playSound();

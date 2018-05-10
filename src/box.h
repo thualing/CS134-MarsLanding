@@ -38,6 +38,9 @@ class Box {
 	Vector3 center() {
 		return ((max() - min()) / 2 + min());
 	}
+    int height() {
+        return max().y() - min().y();
+    }
 };
 
 #endif // _BOX_H_

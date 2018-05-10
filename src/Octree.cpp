@@ -9,28 +9,29 @@
 
 // draw Octree (recursively)
 //
-void Octree::draw(TreeNode & node, int level) {
-	drawBox(node.box);
-    if (node.children.size() == 0) return;
-	level++;
-	for (int i = 0; i < node.children.size(); i++) {
-		draw(node.children[i], level);
-	}
+void Octree::draw(TreeNode & node, int numLevels, int level)
+{
+    if (level >= numLevels) return;
+    drawBox(node.box);
+    level++;
+    for (int i = 0; i < node.children.size(); i++)
+    {
+        draw(node.children[i], numLevels, level);
+    }
 }
-
 
 //draw a box from a "Box" class  
 //
 void Octree::drawBox(const Box &box) {
-	Vector3 min = box.parameters[0];
-	Vector3 max = box.parameters[1];
-	Vector3 size = max - min;
-	Vector3 center = size / 2 + min;
-	ofVec3f p = ofVec3f(center.x(), center.y(), center.z());
-	float w = size.x();
-	float h = size.y();
-	float d = size.z();
-	ofDrawBox(p, w, h, d);
+    Vector3 min = box.parameters[0];
+    Vector3 max = box.parameters[1];
+    Vector3 size = max - min;
+    Vector3 center = size / 2 + min;
+    ofVec3f p = ofVec3f(center.x(), center.y(), center.z());
+    float w = size.x();
+    float h = size.y();
+    float d = size.z();
+    ofDrawBox(p, w, h, d);
 }
 
 // return a Mesh Bounding Box for the entire Mesh
@@ -108,66 +109,69 @@ void Octree::subDivideBox8(const Box &box, vector<Box> & boxList) {
 //  "numLevels" have been created or when all leave nodes contain one 
 //  vertex, whichever comes first.
 //
-void Octree::create(const ofMesh & mesh) {
-	// initialize octree structure
-	//
-	this->mesh = mesh;
-
-    // initialize the firt root node (level 0)
-	// it contains all vertex indices from the mesh
-	// 
-	int level = 0;
-	root.box = meshBounds(mesh);
-	for (int i = 0; i < mesh.getNumVertices(); i++) {
-		root.points.push_back(i);
-	}
-
-	float t1 = ofGetElapsedTimeMillis();
-
-	// recursively buid octree (starting at level 1)
-	//
-	level++;
-	subdivide(root, level);
-	float t2 = ofGetElapsedTimeMillis();
-	cout << "Time to Build Octree: " << t2 - t1 << " milliseconds" << endl;
-
+void Octree::create(const ofMesh &mesh, int numLevels)
+{
+    this->mesh = mesh;
+    int level = 0;
+    root.box = meshBounds(mesh);
+    for (int i = 0; i < mesh.getNumVertices(); i++)
+    {
+        root.points.push_back(i);
+    }
+    
+    float t1 = ofGetElapsedTimeMillis();
+    
+    level++;
+    
+    subdivide(root, numLevels, level);
+    float t2 = ofGetElapsedTimeMillis();
+    cout << "Time to Build Octree: " << t2 - t1 << " milliseconds" << endl;
 }
 
 //  primary recursive function to build octree.
-//  algorithm:
-//  1) return when the level is numLevels or greater
-//  2) subdivide the current node box into 8 boxes
-//  3) for each child box:
-//      (a) distribute points in parent node to child node
-//      (b) if there are points in child node add it to parent's children
-//      (c) if a child has more than one point
-//            recursively call subdivide on child
-//
-void Octree::subdivide(TreeNode & node, int level) {
-    if (node.points.size() == 1) {
-        return;
-    }
-    else {
-        vector<Box> childrenBoxes;
-        subDivideBox8(node.box, childrenBoxes);
-        for (int i = 0; i < childrenBoxes.size(); ++i) {
-            Box tmp = childrenBoxes[i];
-            TreeNode currentChild;
-            vector<int> pointRtn;
-            getMeshPointsInBox(node.points, tmp, pointRtn);
-            if (pointRtn.size() == 1) {
-                currentChild.box = tmp;
-                currentChild.points = pointRtn;
-                node.children.push_back(currentChild);
-            }
-            else if (pointRtn.size() > 1) {
-                currentChild.box = tmp;
-                currentChild.points = pointRtn;
-                node.children.push_back(currentChild);
-                subdivide(currentChild, level + 1);
-            }
+void Octree::subdivide(TreeNode &rootNode, int numLevels, int level)
+{
+    // return when the level is numLevels or greater
+    //
+    if (level >= numLevels) return;
+    
+    // subdivide the current node box into 8 boxes
+    //
+    vector<Box> boxList;
+    subDivideBox8(rootNode.box, boxList);
+    
+    
+    //  for each child box:
+    //      (a) distribute points in parent node to child node
+    //      (b) if there are points in child node add it to parent's children
+    //      (c) if a child has more than one point
+    //            recursively call subdivide on child
+    //
+    level++;
+    //printf("Level %d\n", level);
+    for (int i = 0; i < boxList.size(); i++)
+    {
+        // Make child node
+        // Assign box to child node
+        //
+        TreeNode childNode;
+        childNode.box = boxList[i];
+        
+        int count = getMeshPointsInBox(rootNode.points, rootNode.box, childNode.points);
+        if (count > 0)
+        {
+            rootNode.children.push_back(childNode);
+            
+        }
+        
+        if (childNode.points.size() > 1)
+        {
+            
+            //            subdivide(childNode, numLevels, level);
+            subdivide(rootNode.children.back(), numLevels, level);
         }
     }
+    
 }
 
 //  primary recursive function to test for ray intersection, returns
@@ -181,22 +185,15 @@ void Octree::subdivide(TreeNode & node, int level) {
 //     if no return false;
 //
 //
-bool Octree::intersect(const ofVec3f &point, const TreeNode & node) {
-    if (node.points.size() == 1) {
-        ofVec3f tmpPt = mesh.getVertex(node.points[0]);
-        if (tmpPt.x == point.x && tmpPt.y == point.y && tmpPt.z == point.z) {
-            return true;
-        }
-        return false;
-    }
+bool Octree::intersect(const ofVec3f &point, TreeNode & node) {
     if (node.children.size() == 0) {
         for (int i = 0; i < node.points.size(); ++i) {
             ofVec3f tmpPt = mesh.getVertex(node.points[i]);
             if (tmpPt.x == point.x && tmpPt.y == point.y && tmpPt.z == point.z) {
                 return true;
             }
-            return false;
         }
+        return false;
     }
     for (int i = 0; i < node.children.size(); ++i) {
         TreeNode currentChild = node.children[i];
