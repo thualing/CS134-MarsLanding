@@ -44,8 +44,9 @@ void ParticleEmitter::init() {
 	type = DirectionalEmitter;
 	groupSize = 1;
 	damping = .99;
-	particleColor = ofColor::red;
-	position = ofVec3f(0, 0, 0);
+    //i changed it to blue
+	particleColor = ofColor::blue;
+	position = ofVec3f(0,0,0);
 }
 
 
@@ -57,9 +58,17 @@ void ParticleEmitter::draw() {
 			ofDrawSphere(position, radius/10);  // just draw a small sphere for point emitters 
 			break;
 		case SphereEmitter:
+                ofDrawCircle(position, radius/10);
+                break;
 		case RadialEmitter:
 			ofDrawSphere(position, radius/10);  // just draw a small sphere as a placeholder
 			break;
+                
+                //i added this -luis
+        case DiscEmitter:
+            ofDrawSphere(position, radius/10);  // just draw a small sphere as a placeholder
+            break;
+                //case for disc emitter 
 		default:
 			break;
 		}
@@ -132,10 +141,21 @@ void ParticleEmitter::spawn(float time) {
 		particle.velocity = velocity;
 		particle.position.set(position);
 		break;
+            
+            // I added this -luis
 	case DiscEmitter:   // x-z plane
-	  {  
+	  {
+          ofVec3f dir = ofVec3f(ofRandom(-1, 1), 0, ofRandom(-1, 1));
+         // float speed = velocity.length();
+          particle.velocity = velocity;
+          ofVec3f newPosition = ofVec3f(ofRandom(-1, 1), 0, ofRandom(-1, 1));
+          newPosition = newPosition.getNormalized();
+          particle.position.set((newPosition * radius)/5 + position);
+          
 	     // Removed my code as it is part of the assignment - KMS
-	  }
+          
+      }
+        break;
 	}
 
 	// other particle attributes

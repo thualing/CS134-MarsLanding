@@ -19,8 +19,8 @@
 //  Please document/comment all of your work !
 //  Have Fun !!
 //
-//  Student Name:   < Hua Tong >
-//  Date: <04-18-2018>
+//  Student Name:   <Hua Tong, Le Dao, Luis Arevalo>
+//  Date: <05-10-2018>
 
 
 #include "ofApp.h"
@@ -31,16 +31,18 @@
 //--------------------------------------------------------------
 // setup scene, lighting, state and load geometry
 //
-void ofApp::setup(){
-    
+void ofApp::setup() {
+
+	background.load("images/stars.jpg");
+
 	bWireframe = false;
 	bDisplayPoints = false;
 	bAltKeyDown = false;
 	bCtrlKeyDown = false;
 	bRoverLoaded = false;
 	bTerrainSelected = true;
-    level = 0;
-//	ofSetWindowShape(1024, 768);
+	level = 0;
+	//	ofSetWindowShape(1024, 768);
 	cam.setDistance(10);
 	cam.setNearClip(.1);
 	cam.setFov(65.5);   // approx equivalent to 28mm in 35mm format
@@ -53,52 +55,69 @@ void ofApp::setup(){
 	initLightingAndMaterials();
 
 	mars.loadModel("geo/mars-low-v2.obj");
-    mars.setScale(4, 4, 4);
-    lander.loadModel("geo/lander.obj");
-    lander.setScale(0.5, 0.5, 0.5);
-    landerBoundingBox = meshBounds(lander.getMesh(0));
-    
-    
-    
-    
+	mars.setScale(4, 4, 4);
+	lander.loadModel("geo/lander.obj");
+	lander.setScale(0.2, 0.2, 0.2);
+
+	// Camera
+	//
+	theCam = &cam;
+	ground.setOrientation(ofVec3f(-90, 0, 0));
+	ground.setNearClip(.1);
+	side.setNearClip(.1);
+	track.setPosition(0, 1, 0);
+	track.setNearClip(.1);
+
+
 	mars.setScaleNormalization(false);
-    lander.setScaleNormalization(false);
-    tree.create(mars.getMesh(0), 7);
-    collision = false;
-    frameCounter = 0;
+	lander.setScaleNormalization(false);
+	tree.create(mars.getMesh(0), 7);
+	collision = false;
+	frameCounter = 0;
+
+	// this part from rocketBall
+	cam.setDistance(10);
+	cam.setNearClip(.1);
+	cam.setFov(65.5);   // approx equivalent to 28mm in 35mm format
+	ofSetVerticalSync(true);
+	ofSetFrameRate(60);
+	ofSetBackgroundColor(ofColor::black);
+
+	// set up sound
+	//
+	if (soundPlayer.load("sounds/rocket.wav")) {
+		soundPlayer.setLoop(true);
+		soundFileLoaded = true;
+	}
+
+	//  setup emitter (for engine)
+	//
+	engine.setRate(600);
+	engine.setParticleRadius(.010);
+    engine.setEmitterType(DiscEmitter);
+    engine.setLifespan(1);
+	engine.visible = false;
+	ship.radius = 0.010;
+
+	// create our one lonely particle
+	//
+	ship.lifespan = 10000;
+	ship.position.set(0, 10, 0);
+	lander.setPosition(ship.position.x, ship.position.y, ship.position.z);
+	sys.add(ship);
+
+	sys.addForce(&thruster);
+	sys.addForce(&impulseForce);
     
-    // this part from rocketBall
-    cam.setDistance(10);
-    cam.setNearClip(.1);
-    cam.setFov(65.5);   // approx equivalent to 28mm in 35mm format
-    ofSetVerticalSync(true);
-    ofSetFrameRate(60);
-    ofSetBackgroundColor(ofColor::black);
+    //adds turbulence to the partlces, adds gravity, impulse radial force and cyclic force
+    engine.sys->addForce(new TurbulenceForce(ofVec3f(-2, -1, -3), ofVec3f(1, 2, 5)));
+    engine.sys->addForce(new ImpulseRadialForce(10));
+    engine.sys->addForce(new CyclicForce(20));
+    engine.setGroupSize(10);
     
-    // set up sound
-    //
-    if (soundPlayer.load("sounds/rocket.wav")) {
-        soundPlayer.setLoop(true);
-        soundFileLoaded = true;
-    }
-    
-    //  setup emitter (for engine)
-    //
-    engine.setRate(20);
-    engine.setParticleRadius(.010);
-    engine.visible = false;
-    ship.radius = 0.050;
-    
-    // create our one lonely particle
-    //
-    ship.lifespan = 10000;
-    ship.position.set(0, 5, 0);
-    lander.setPosition(ship.position.x, ship.position.y, ship.position.z);
-    sys.add(ship);
-    
-    sys.addForce(&thruster);
-    sys.addForce(&impulseForce);
-    
+    //this code adds gravity to the ship. the middle paramters makes it fall
+    sys.addForce(new GravityForce(ofVec3f(0, -.01, 0)));
+
 }
 
 
@@ -106,103 +125,99 @@ void ofApp::setup(){
 // incrementally update scene (animation)
 //
 void ofApp::update() {
-    sys.update();
-    engine.update();
-    engine.setPosition(sys.particles[0].position);
-    lander.setPosition(sys.particles[0].position.x, sys.particles[0].position.y,sys.particles[0].position.z);
-    lander.update();
-    collisionDetect();
+
+	sys.update();
+	engine.update();
+	engine.setPosition(sys.particles[0].position);
+	lander.setPosition(sys.particles[0].position.x, sys.particles[0].position.y, sys.particles[0].position.z);
+	lander.update();
+	collisionDetect();
+
+	// Camera
+	//
+	ground.setPosition(sys.particles[0].position + ofVec3f(0.1, 0, 0.1));
+	side.setPosition(sys.particles[0].position + ofVec3f(-1.5, 0, 0));
+	track.lookAt(lander.getPosition());
 }
 //--------------------------------------------------------------
-void ofApp::draw(){
+void ofApp::draw() {
+	ofSetColor(255, 255, 255);
+	ofDisableDepthTest();
+	background.draw(0, 0, ofGetWindowWidth(), ofGetWindowHeight());
+	ofEnableDepthTest();
 
-//	ofBackgroundGradient(ofColor(20), ofColor(0));   // pick your own background
-	ofBackground(ofColor::black);
-//	cout << ofGetFrameRate() << endl;
-
-	cam.begin();
+	theCam->begin();
 	ofPushMatrix();
-    
-    // this part from RocketBall
-    // draw grid
-    //
-//    ofPushMatrix();
-//    ofRotate(90, 0, 0, 1);
-//    ofSetLineWidth(1);
-//    ofSetColor(ofColor::dimGrey);
-//    ofDrawGridPlane();
-//    ofPopMatrix();
-    
-    // draw particle system
-    //
-    sys.draw();
-    
-    // draw engine output
-    //
-    engine.draw();
-    
-    // rocketBall
-    
-    
+
+	// draw particle system
+	//
+	sys.draw();
+
+	// draw engine output
+	//
+	engine.draw();
+
+
 	if (bWireframe) {                    // wireframe mode  (include axis)
 		ofDisableLighting();
-		ofSetColor(ofColor::slateGray);
+		ofSetColor(ofColor::red);
 		mars.drawWireframe();
-        lander.drawWireframe();
+		lander.drawWireframe();
 		if (bRoverLoaded) {
 			rover.drawWireframe();
-			if (!bTerrainSelected) drawAxis(rover.getPosition());
+//            if (!bTerrainSelected) drawAxis(rover.getPosition());
 		}
-		if (bTerrainSelected) drawAxis(ofVec3f(0, 0, 0));
+//        if (bTerrainSelected) drawAxis(ofVec3f(0, 0, 0));
 	}
 	else {
 		ofEnableLighting();              // shaded mode
 		mars.drawFaces();
-        lander.drawFaces();
-        
+		lander.drawFaces();
+
 		if (bRoverLoaded) {
 			rover.drawFaces();
-            
-			if (!bTerrainSelected) drawAxis(rover.getPosition());
+
+//            if (!bTerrainSelected) drawAxis(rover.getPosition());
 		}
-		if (bTerrainSelected) drawAxis(ofVec3f(0, 0, 0));
+//        if (bTerrainSelected) drawAxis(ofVec3f(0, 0, 0));
 	}
 
 
-	if (bDisplayPoints) {                // display points as an option    
-		glPointSize(3);
-		ofSetColor(ofColor::green);
-		mars.drawVertices();
-        rover.drawVertices();
-        lander.drawVertices();
-	}
+//    if (bDisplayPoints) {                // display points as an option
+//        glPointSize(3);
+//        ofSetColor(ofColor::green);
+//        mars.drawVertices();
+//        rover.drawVertices();
+//        lander.drawVertices();
+//    }
+//
+//    // highlight selected point (draw sphere around selected point)
+//    //
+//    if (bPointSelected) {
+//        ofSetColor(ofColor::red);
+//        ofDrawSphere(selectedPoint, .1);
+//    }
+//
+    ofNoFill();
+//    ofSetColor(ofColor::red);
+//    drawBox(boundingBox);
 
-	// highlight selected point (draw sphere around selected point)
-	//
-	if (bPointSelected) {
-		ofSetColor(ofColor::blue);
-		ofDrawSphere(selectedPoint, .1);
-	}
-	
-	ofNoFill();
-	ofSetColor(ofColor::white);
-    drawBox(boundingBox);
+//    ofSetColor(ofColor::red);
+//    for (int i = 0; i < level1.size(); i++)
+//        drawBox(level1[i]);
+//    ofPopMatrix();
+//    if (collision) {
+//        cout << "landing" << endl;
+//    }
 
-    ofSetColor(ofColor::red);
-    for (int i=0; i < level1.size(); i++)
-        drawBox(level1[i]);
-	ofPopMatrix();
-    if (collision) {
-        cout << "landing" << endl;
-    }
-    
-	cam.end();
-    
-    string str;
-    str += "Frame Rate:" + std::to_string(ofGetFrameRate());
-    ofSetColor(ofColor::white)
-    ;
-    ofDrawBitmapString(str, ofGetWindowWidth() - 170, 15);
+	theCam->end();
+
+    //print frame rate
+//    string str;
+//    str += "Frame Rate:" + std::to_string(ofGetFrameRate());
+//    ofSetColor(ofColor::white)
+//        ;
+//    ofDrawBitmapString(str, ofGetWindowWidth() - 170, 15);
 }
 
 // 
@@ -219,7 +234,7 @@ void ofApp::drawAxis(ofVec3f location) {
 	// X Axis
 	ofSetColor(ofColor(255, 0, 0));
 	ofDrawLine(ofPoint(0, 0, 0), ofPoint(1, 0, 0));
-	
+
 
 	// Y Axis
 	ofSetColor(ofColor(0, 255, 0));
@@ -278,48 +293,60 @@ void ofApp::keyPressed(int key) {
 		break;
 	case OF_KEY_DEL:
 		break;
-    case OF_KEY_UP:
-        playSound();
-        thruster.add(ofVec3f(0, .5, 0));
-        engine.setVelocity(ofVec3f(0, -5, 0));
-        engine.start();
-        soundPlayer.play();
-        break;
-    case OF_KEY_DOWN:
-        playSound();
-        thruster.add(ofVec3f(0, -.5, 0));
-        engine.setVelocity(ofVec3f(0, 5, 0));
-        engine.start();
-        soundPlayer.play();
-        break;
-    case OF_KEY_LEFT:
-        playSound();
-        thruster.add(ofVec3f(-.5, 0, 0));
-        engine.setVelocity(ofVec3f(5, 0, 0));
-        engine.start();
-        soundPlayer.play();
-        break;
-    case OF_KEY_RIGHT:
-        playSound();
-        thruster.add(ofVec3f(.5, 0, 0));
-        engine.setVelocity(ofVec3f(-5, 0, 0));
-        engine.start();
-        soundPlayer.play();
-        break;
-    case 'z':
-        playSound();
-        thruster.add(ofVec3f(0, 0, 0.5));
-        engine.setVelocity(ofVec3f(0, 0, -5));
-        engine.start();
-        soundPlayer.play();
-        break;
-    case 'x':
-        playSound();
-        thruster.add(ofVec3f(0, 0, -0.5));
-        engine.setVelocity(ofVec3f(0, 0, 5));
-        engine.start();
-        soundPlayer.play();
-        break;
+	case OF_KEY_UP:
+		playSound();
+		thruster.add(ofVec3f(0, .5, 0));
+		engine.setVelocity(ofVec3f(0, -5, 0));
+		engine.start();
+		soundPlayer.play();
+		break;
+	case OF_KEY_DOWN:
+		playSound();
+		thruster.add(ofVec3f(0, -.5, 0));
+		engine.setVelocity(ofVec3f(0, 5, 0));
+		engine.start();
+		soundPlayer.play();
+		break;
+	case OF_KEY_LEFT:
+		playSound();
+		thruster.add(ofVec3f(-.5, 0, 0));
+		engine.setVelocity(ofVec3f(5, 0, 0));
+		engine.start();
+		soundPlayer.play();
+		break;
+	case OF_KEY_RIGHT:
+		playSound();
+		thruster.add(ofVec3f(.5, 0, 0));
+		engine.setVelocity(ofVec3f(-5, 0, 0));
+		engine.start();
+		soundPlayer.play();
+		break;
+	case 'z':
+		playSound();
+		thruster.add(ofVec3f(0, 0, 0.5));
+		engine.setVelocity(ofVec3f(0, 0, -5));
+		engine.start();
+		soundPlayer.play();
+		break;
+	case 'x':
+		playSound();
+		thruster.add(ofVec3f(0, 0, -0.5));
+		engine.setVelocity(ofVec3f(0, 0, 5));
+		engine.start();
+		soundPlayer.play();
+		break;
+	case OF_KEY_F1:
+		theCam = &cam;
+		break;
+	case OF_KEY_F2:
+		theCam = &ground;
+		break;
+	case OF_KEY_F3:
+		theCam = &side;
+		break;
+	case OF_KEY_F4:
+		theCam = &track;
+		break;
 	default:
 		break;
 	}
@@ -338,11 +365,11 @@ void ofApp::togglePointsDisplay() {
 }
 
 void ofApp::keyReleased(int key) {
-    soundPlayer.stop();
-    engine.stop();
-    thruster.set(ofVec3f(0, 0, 0));
+	soundPlayer.stop();
+	engine.stop();
+	thruster.set(ofVec3f(0, 0, 0));
 	switch (key) {
-	
+
 	case OF_KEY_ALT:
 		cam.disableMouseInput();
 		bAltKeyDown = false;
@@ -361,13 +388,13 @@ void ofApp::keyReleased(int key) {
 
 
 //--------------------------------------------------------------
-void ofApp::mouseMoved(int x, int y ){
+void ofApp::mouseMoved(int x, int y) {
 }
 
 
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button) {
-    ofVec3f mouse(mouseX, mouseY);
+	ofVec3f mouse(mouseX, mouseY);
 	ofVec3f rayPoint = cam.screenToWorld(mouse);
 	ofVec3f rayDir = rayPoint - cam.getPosition();
 	rayDir.normalize();
@@ -394,9 +421,9 @@ void ofApp::drawBox(const Box &box) {
 // return a Mesh Bounding Box for the entire Mesh
 //
 Box ofApp::meshBounds(const ofMesh & mesh) {
-    // get vertex gets 8 points, and returns first point as the starting point of the loop
+	// get vertex gets 8 points, and returns first point as the starting point of the loop
 	int n = mesh.getNumVertices();
-    // access each vertex of the box
+	// access each vertex of the box
 	ofVec3f v = mesh.getVertex(0);
 	ofVec3f max = v;
 	ofVec3f min = v;
@@ -413,38 +440,6 @@ Box ofApp::meshBounds(const ofMesh & mesh) {
 		else if (v.z < min.z) min.z = v.z;
 	}
 	return Box(Vector3(min.x, min.y, min.z), Vector3(max.x, max.y, max.z));
-}
-
-//  Subdivide a Box into eight(8) equal size boxes, return them in boxList(a vector, or a list array);
-//
-void ofApp::subDivideBox8(const Box &box, vector<Box> & boxList) {
-	Vector3 min = box.parameters[0];
-	Vector3 max = box.parameters[1];
-	Vector3 size = max - min;
-	Vector3 center = size / 2 + min;
-	float xdist = (max.x() - min.x()) / 2;
-	float ydist = (max.y() - min.y()) / 2;
-	float zdist = (max.z() - min.z()) / 2;
-	Vector3 h = Vector3(0, ydist, 0);
-
-	//  generate ground floor
-	//
-	Box b[8];
-	b[0] = Box(min, center);
-	b[1] = Box(b[0].min() + Vector3(xdist, 0, 0), b[0].max() + Vector3(xdist, 0, 0));
-	b[2] = Box(b[1].min() + Vector3(0, 0, zdist), b[1].max() + Vector3(0, 0, zdist));
-	b[3] = Box(b[2].min() + Vector3(-xdist, 0, 0), b[2].max() + Vector3(-xdist, 0, 0));
-
-	boxList.clear();
-	for (int i = 0; i < 4; i++)
-		boxList.push_back(b[i]);
-
-	// generate second story
-	//
-	for (int i = 4; i < 8; i++) {
-		b[i] = Box(b[i - 4].min() + h, b[i - 4].max() + h);
-		boxList.push_back(b[i]);
-	}
 }
 
 //--------------------------------------------------------------
@@ -496,12 +491,12 @@ bool ofApp::doPointSelection() {
 	if (bPointSelected) {
 		float distance = 0;
 		for (int i = 0; i < selection.size(); i++) {
-			ofVec3f point =  cam.worldToCamera(selection[i]);
+			ofVec3f point = cam.worldToCamera(selection[i]);
 
 			// In camera space, the camera is at (0,0,0), so distance from 
 			// the camera is simply the length of the point vector
 			//
-			float curDist = point.length(); 
+			float curDist = point.length();
 
 			if (i == 0 || curDist < distance) {
 				distance = curDist;
@@ -520,22 +515,22 @@ void ofApp::setCameraTarget() {
 
 
 //--------------------------------------------------------------
-void ofApp::mouseEntered(int x, int y){
+void ofApp::mouseEntered(int x, int y) {
 
 }
 
 //--------------------------------------------------------------
-void ofApp::mouseExited(int x, int y){
+void ofApp::mouseExited(int x, int y) {
 
 }
 
 //--------------------------------------------------------------
-void ofApp::windowResized(int w, int h){
+void ofApp::windowResized(int w, int h) {
 
 }
 
 //--------------------------------------------------------------
-void ofApp::gotMessage(ofMessage msg){
+void ofApp::gotMessage(ofMessage msg) {
 
 }
 
@@ -552,7 +547,7 @@ void ofApp::initLightingAndMaterials() {
 	{ 1.0f, 1.0f, 1.0f, 1.0f };
 
 	static float position[] =
-	{5.0, 5.0, 5.0, 0.0 };
+	{ 5.0, 5.0, 5.0, 0.0 };
 
 	static float lmodel_ambient[] =
 	{ 1.0f, 1.0f, 1.0f, 1.0f };
@@ -575,9 +570,9 @@ void ofApp::initLightingAndMaterials() {
 
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
-//	glEnable(GL_LIGHT1);
+	//	glEnable(GL_LIGHT1);
 	glShadeModel(GL_SMOOTH);
-} 
+}
 
 void ofApp::savePicture() {
 	ofImage picture;
@@ -614,7 +609,7 @@ bool ofApp::mouseIntersectPlane(ofVec3f planePoint, ofVec3f planeNorm, ofVec3f &
 }
 
 void ofApp::playSound() {
-    if (soundFileLoaded) soundPlayer.play();
+	if (soundFileLoaded) soundPlayer.play();
 }
 
 //--------------------------------------------------------------
@@ -622,15 +617,16 @@ void ofApp::playSound() {
 // collision detection
 //
 void ofApp::collisionDetect() {
-    contactPt =  sys.particles[0].position;
-    ofVec3f vel = sys.particles[0].velocity;
-    // check if the ship is moving up
-    if (vel.y > 0) {
-        return;
-    }
-    if (tree.intersect(contactPt, tree.root)) {
-        collision = true;
-//        cout << "velocity: " << vel << endl;
-        impulseForce.apply(1.5 * (- vel * 3.6));
-    }
+	contactPt = sys.particles[0].position;
+	ofVec3f vel = sys.particles[0].velocity;
+	// check if the ship is moving up
+	if (vel.y > 0) {
+		return;
+	}
+	if (tree.intersect(contactPt, tree.root)) {
+		collision = true;
+        cout << "land" <<endl;
+		//        cout << "velocity: " << vel << endl;
+		impulseForce.apply(1.5 * (-vel * 3.6));
+	}
 }
